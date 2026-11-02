@@ -86,6 +86,7 @@
 			:model-value="childProjects"
 			:can-edit-order="true"
 			:can-collapse="canCollapse"
+			:sort-mode="sortMode"
 		/>
 	</li>
 </template>
@@ -97,6 +98,7 @@ import {useCurrentProject} from '@/composables/useCurrentProject'
 import {useTaskDragState} from '@/composables/useTaskDragState'
 import {useDelayedLoading} from '@/composables/useDelayedLoading'
 import {useStorage} from '@vueuse/core'
+import type {SidebarProjectSortMode} from '@/helpers/userSettings'
 
 import type {ProjectResponse} from '@/client/queries/projects'
 
@@ -118,9 +120,11 @@ const props = defineProps<{
 	isLoading?: boolean,
 	canCollapse?: boolean,
 	canEditOrder?: boolean,
+	sortMode?: SidebarProjectSortMode,
 }>()
 
 const showLoading = useDelayedLoading(() => props.isLoading)
+const sortMode = computed(() => props.sortMode ?? 'manual')
 
 const {draggedTask} = useTaskDragState()
 const isHoveredDuringDrag = ref(false)

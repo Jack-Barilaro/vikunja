@@ -2,20 +2,28 @@ import {describe, it, expect, vi} from 'vitest'
 import {mount} from '@vue/test-utils'
 import {defineComponent, h, nextTick, type PropType} from 'vue'
 import draggable from 'zhyswan-vuedraggable'
+import type {SortableEvent} from 'sortablejs'
 
 import ProjectsNavigation from './ProjectsNavigation.vue'
 import type {ProjectResponse} from '@/client/queries/projects'
 
+const updateProject = vi.hoisted(() => vi.fn())
 vi.mock('@/client/queries/projects', () => ({
-	useUpdateProjectMutation: () => ({mutateAsync: vi.fn()}),
+	useUpdateProjectMutation: () => ({mutateAsync: updateProject}),
 }))
 vi.mock('@/composables/useProjects', () => ({
 	useProjects: () => ({projects: {}}),
 }))
 
 const ProjectsNavigationItem = defineComponent({
-	props: {project: {type: Object as PropType<ProjectResponse>, required: true}},
-	setup: props => () => h('li', {'data-project-id': props.project.id}),
+	props: {
+		project: {type: Object as PropType<ProjectResponse>, required: true},
+		canEditOrder: {type: Boolean, default: false},
+	},
+	setup: props => () => h('li', {
+		'data-project-id': props.project.id,
+		'data-can-edit-order': props.canEditOrder,
+	}),
 })
 
 function projects(...ids: number[]) {
@@ -27,6 +35,30 @@ function renderedIds(wrapper: ReturnType<typeof mount>) {
 }
 
 describe('ProjectsNavigation', () => {
+	it('sorts an automatic view without changing manual order and disables dragging', async () => {
+		const input = [
+			{...projects(1)[0], title: 'Zebra'},
+			{...projects(2)[0], title: 'Alpha'},
+		]
+		const wrapper = mount(ProjectsNavigation, {
+			props: {modelValue: input, canEditOrder: true, sortMode: 'title-asc'},
+			global: {stubs: {ProjectsNavigationItem}},
+		})
+		const list = wrapper.findComponent(draggable)
+
+		expect(renderedIds(wrapper)).toEqual([2, 1])
+		expect(list.find('menu').classes()).toContain('dragging-disabled')
+		expect(wrapper.findAll('li').every(item => item.attributes('data-can-edit-order') === 'false')).toBe(true)
+		list.vm.$emit('end', {} as SortableEvent)
+		expect(updateProject).not.toHaveBeenCalled()
+
+		await wrapper.setProps({sortMode: 'manual'})
+
+		expect(renderedIds(wrapper)).toEqual([1, 2])
+		expect(input.map(project => project.id)).toEqual([1, 2])
+		wrapper.unmount()
+	})
+
 	it('does not patch the list while Sortable owns its DOM', async () => {
 		const errors: unknown[] = []
 		const wrapper = mount(ProjectsNavigation, {
