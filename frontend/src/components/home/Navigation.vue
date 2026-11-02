@@ -118,10 +118,23 @@
 				class="menu"
 				:aria-label="$t('project.projects')"
 			>
+				<FormField
+					v-slot="{id}"
+					:label="$t('navigation.projectSort')"
+					class="project-sort-field"
+				>
+					<FormSelect
+						:id="id"
+						:model-value="projectSortMode"
+						:options="projectSortOptions"
+						@update:modelValue="setProjectSortMode"
+					/>
+				</FormField>
 				<ProjectsNavigation
 					:model-value="projects"
 					:can-edit-order="true"
 					:can-collapse="true"
+					:sort-mode="projectSortMode"
 				/>
 			</nav>
 		</template>
@@ -142,6 +155,7 @@
 
 <script setup lang="ts">
 import {computed} from 'vue'
+import {useI18n} from 'vue-i18n'
 
 import {SHORTCUTS} from '@/constants/shortcuts'
 import PoweredByLink from '@/components/home/PoweredByLink.vue'
@@ -154,18 +168,44 @@ import {useConfigStore} from '@/stores/config'
 import {PRO_FEATURE} from '@/constants/proFeatures'
 import ProjectsNavigation from '@/components/home/ProjectsNavigation.vue'
 import {useSidebarResize} from '@/composables/useSidebarResize'
+import FormField from '@/components/input/FormField.vue'
+import FormSelect from '@/components/input/FormSelect.vue'
+import {useAuthStore} from '@/stores/auth'
+import {useUpdateFrontendSettingsMutation} from '@/client/queries/account'
+import {isSidebarProjectSortMode} from '@/helpers/userSettings'
 
 const baseStore = useBaseStore()
 const projectList = useProjects()
 const configStore = useConfigStore()
+const authStore = useAuthStore()
+const updateFrontendSettings = useUpdateFrontendSettingsMutation()
 
 const timeTrackingEnabled = computed(() => configStore.isProFeatureEnabled(PRO_FEATURE.TIME_TRACKING))
+const projectSortMode = computed(() => authStore.settings.frontend_settings.sidebar_project_sort)
+const {t} = useI18n()
+const projectSortOptions = computed(() => [
+	{value: 'manual', label: t('navigation.projectSortManual')},
+	{value: 'title-asc', label: t('navigation.projectSortTitleAsc')},
+	{value: 'title-desc', label: t('navigation.projectSortTitleDesc')},
+	{value: 'color', label: t('navigation.projectSortColor')},
+])
 
 const {sidebarWidthStyle, isResizing, startResize, isMobile} = useSidebarResize()
 
 const projects = computed(() => projectList.notArchivedRootProjects)
 const favoriteProjects = computed(() => projectList.favoriteProjects)
 const savedFilterProjects = computed(() => projectList.savedFilterProjects)
+
+function setProjectSortMode(value: string | number) {
+	if (!isSidebarProjectSortMode(value)) return
+	const session = authStore.session
+	if (!session || value === projectSortMode.value) return
+	updateFrontendSettings.mutate({
+		id: session.id,
+		type: session.type,
+		frontendSettings: {sidebar_project_sort: value},
+	})
+}
 </script>
 
 <style lang="scss" scoped>
@@ -254,5 +294,9 @@ const savedFilterProjects = computed(() => projectList.savedFilterProjects)
 
 .menu + .menu {
 	padding-block-start: math.div($navbar-padding, 2);
+}
+
+.project-sort-field {
+	margin-inline: 1rem;
 }
 </style>

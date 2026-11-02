@@ -13,6 +13,12 @@ import {DATE_DISPLAY} from '@/constants/dateDisplay'
 import {TIME_FORMAT} from '@/constants/timeFormat'
 import {RELATION_KIND} from '@/types/IRelationKind'
 
+export type SidebarProjectSortMode = 'manual' | 'title-asc' | 'title-desc' | 'color'
+
+export function isSidebarProjectSortMode(value: unknown): value is SidebarProjectSortMode {
+	return value === 'manual' || value === 'title-asc' || value === 'title-desc' || value === 'color'
+}
+
 export interface FrontendSettings {
 	play_sound_when_done: boolean
 	quick_add_magic_mode: PrefixMode
@@ -28,6 +34,7 @@ export interface FrontendSettings {
 	always_show_bucket_task_count: boolean
 	show_last_viewed: boolean
 	sidebar_width: number | null
+	sidebar_project_sort: SidebarProjectSortMode
 	comment_sort_order: 'asc' | 'desc'
 	desktop_quick_entry_shortcut: string
 	quick_add_default_reminders: {relative_period?: number}[]
@@ -83,6 +90,7 @@ export function defaultFrontendSettings(): FrontendSettings {
 		always_show_bucket_task_count: false,
 		show_last_viewed: true,
 		sidebar_width: null,
+		sidebar_project_sort: 'manual',
 		comment_sort_order: 'asc',
 		desktop_quick_entry_shortcut: 'CmdOrCtrl+Shift+A',
 		default_due_time: undefined,

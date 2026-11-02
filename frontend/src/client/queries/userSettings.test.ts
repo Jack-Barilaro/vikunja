@@ -27,6 +27,19 @@ describe('normalizeUserSettings', () => {
 		expect(settings.language).toBe('de-DE')
 	})
 
+	it('defaults sidebar project sorting to manual for older or invalid settings', () => {
+		expect(normalizeUserSettings({}).frontend_settings.sidebar_project_sort).toBe('manual')
+		expect(normalizeUserSettings({
+			frontend_settings: {sidebar_project_sort: 'unknown'},
+		}).frontend_settings.sidebar_project_sort).toBe('manual')
+	})
+
+	it('keeps a valid sidebar project sorting preference', () => {
+		const settings = normalizeUserSettings({frontend_settings: {sidebar_project_sort: 'title-desc'}})
+
+		expect(settings.frontend_settings.sidebar_project_sort).toBe('title-desc')
+	})
+
 	it('keeps the language returned by the api', () => {
 		const settings = normalizeUserSettings({language: 'fr-FR'})
 

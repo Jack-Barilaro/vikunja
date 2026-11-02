@@ -26,6 +26,7 @@ vi.mock('@/message', () => ({
 vi.mock('./avatars', () => ({invalidateAvatarQueries: vi.fn()}))
 vi.mock('@/helpers/auth', async importOriginal => ({
 	...await importOriginal<typeof import('@/helpers/auth')>(),
+	getToken: () => null,
 	getTokenIdentity: () => tokenIdentity.current,
 }))
 
@@ -212,7 +213,7 @@ describe('account settings mutations', () => {
 		expect(error).not.toHaveBeenCalled()
 	})
 
-	it('patches a single frontend setting and shows it while saving', async () => {
+	it('patches frontend settings and shows them while saving', async () => {
 		queryClient.setQueryData(accountKeys.user(1), {
 			id: 1,
 			name: 'Old',
@@ -220,6 +221,7 @@ describe('account settings mutations', () => {
 				name: 'Old',
 				frontend_settings: {
 					sidebar_width: 280,
+					sidebar_project_sort: 'manual',
 					comment_sort_order: 'desc',
 				},
 			},
@@ -235,12 +237,15 @@ describe('account settings mutations', () => {
 			.execute({
 				id: 1,
 				type: 1,
-				frontendSettings: {sidebar_width: 400},
+				frontendSettings: {sidebar_width: 400, sidebar_project_sort: 'color'},
 			})
 
-		expect(sdk.patchUserSettingsRead.mock.calls[0][0].body).toEqual({frontend_settings: {sidebar_width: 400}})
+		expect(sdk.patchUserSettingsRead.mock.calls[0][0].body).toEqual({
+			frontend_settings: {sidebar_width: 400, sidebar_project_sort: 'color'},
+		})
 		expect(shownWhileSaving).toMatchObject({
 			sidebar_width: 400,
+			sidebar_project_sort: 'color',
 			comment_sort_order: 'desc',
 		})
 	})

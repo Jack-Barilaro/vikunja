@@ -7,14 +7,14 @@
 		handle=".handle"
 		tag="menu"
 		item-key="id"
-		:disabled="!canEditOrder"
+		:disabled="!canDrag"
 		filter=".drag-disabled"
 		:component-data="{
 			type: 'transition-group',
 			name: !isDraggingProject ? 'flip-list' : null,
 			class: [
 				'menu-list can-be-hidden',
-				{ 'dragging-disabled': !canEditOrder }
+				{ 'dragging-disabled': !canDrag }
 			],
 		}"
 		@start="() => isDraggingProject = true"
@@ -26,7 +26,8 @@
 				:project="project"
 				:is-loading="projectUpdating[project.id]"
 				:can-collapse="canCollapse"
-				:can-edit-order="canEditOrder"
+				:can-edit-order="canDrag"
+				:sort-mode="sortMode"
 				:data-project-id="project.id"
 			/>
 		</template>
@@ -34,7 +35,7 @@
 </template>
 
 <script lang="ts" setup>
-import {ref, watch} from 'vue'
+import {computed, ref, watch} from 'vue'
 import {draggableFor} from '@/components/base/Draggable'
 import type {SortableEvent} from 'sortablejs'
 
@@ -42,6 +43,8 @@ import ProjectsNavigationItem from '@/components/home/ProjectsNavigationItem.vue
 
 import {calculateItemPosition} from '@/helpers/calculateItemPosition'
 import {useUpdateProjectMutation, type ProjectResponse} from '@/client/queries/projects'
+import {sortSidebarProjects} from '@/helpers/sortSidebarProjects'
+import type {SidebarProjectSortMode} from '@/helpers/userSettings'
 
 import {useProjects} from '@/composables/useProjects'
 import {useProjectDragState} from '@/composables/useProjectDragState'
@@ -50,6 +53,7 @@ const props = defineProps<{
 	modelValue?: ProjectResponse[],
 	canEditOrder: boolean,
 	canCollapse?: boolean,
+	sortMode?: SidebarProjectSortMode,
 }>()
 
 const emit = defineEmits<{
@@ -59,6 +63,8 @@ const emit = defineEmits<{
 const draggable = draggableFor<ProjectResponse>()
 
 const {isDraggingProject} = useProjectDragState()
+const sortMode = computed(() => props.sortMode ?? 'manual')
+const canDrag = computed(() => props.canEditOrder && sortMode.value === 'manual')
 
 const projectList = useProjects()
 const updateMutation = useUpdateProjectMutation()
@@ -66,17 +72,18 @@ const updateMutation = useUpdateProjectMutation()
 // Vue draggable will modify the projects list as it changes their position which will not work on a prop.
 // Hence, we'll clone the prop and work on the clone.
 const availableProjects = ref<ProjectResponse[]>([])
+const sortedProjects = computed(() => sortSidebarProjects(props.modelValue ?? [], sortMode.value))
 // Mid-drag, Sortable has moved the dragged item's DOM node, possibly into another list. Patching
 // the list then anchors on that node, throws NotFoundError and leaves the sidebar half patched.
 let projectsChangedDuringDrag: ProjectResponse[] | null = null
 watch(
-	() => props.modelValue,
+	sortedProjects,
 	projects => {
 		if (isDraggingProject.value) {
-			projectsChangedDuringDrag = projects || []
+			projectsChangedDuringDrag = projects
 			return
 		}
-		availableProjects.value = projects || []
+		availableProjects.value = projects
 	},
 	{immediate: true},
 )
@@ -92,6 +99,7 @@ const projectUpdating = ref<Record<number, boolean>>({})
 
 async function saveProjectPosition(e: SortableEvent) {
 	isDraggingProject.value = false
+	if (!canDrag.value) return
 	if (!e.newIndex && e.newIndex !== 0) return
 
 	const projectsActive = availableProjects.value

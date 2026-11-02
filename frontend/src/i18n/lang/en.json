@@ -863,7 +863,12 @@
     "home": "Vikunja home",
     "toggleChildProjects": "Toggle sub-projects",
     "main": "Main navigation",
-    "savedFilters": "Saved filters"
+    "savedFilters": "Saved filters",
+    "projectSort": "Sort projects",
+    "projectSortManual": "Manual",
+    "projectSortTitleAsc": "Title A–Z",
+    "projectSortTitleDesc": "Title Z–A",
+    "projectSortColor": "Color"
   },
   "misc": {
     "loading": "Loading…",

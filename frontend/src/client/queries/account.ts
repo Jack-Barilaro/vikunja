@@ -23,6 +23,7 @@ import {
 	type ExtraSettingsLink,
 	type FrontendSettings,
 	type UserSettings,
+	isSidebarProjectSortMode,
 } from '@/helpers/userSettings'
 import {getBrowserLanguage, i18n, setLanguage, type SupportedLocale} from '@/i18n'
 import {error} from '@/message'
@@ -81,6 +82,9 @@ export function normalizeUserSettings(data: UserGeneralSettings = {}): UserSetti
 		frontend_settings: {
 			...defaultFrontendSettings(),
 			...frontend,
+			sidebar_project_sort: isSidebarProjectSortMode(frontend.sidebar_project_sort)
+				? frontend.sidebar_project_sort
+				: 'manual',
 			quick_add_default_reminders: Array.isArray(frontend.quick_add_default_reminders)
 				? frontend.quick_add_default_reminders.map(reminder => ({...reminder}))
 				: [],
